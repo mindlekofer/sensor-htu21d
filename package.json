@@ -1,0 +1,14 @@
+{
+  "name": "sensor-htu21d",
+  "version": "1.0.0",
+  "description": "",
+  "main": "htu21d.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Marcel Indlekofer",
+  "license": "ISC",
+  "dependencies": {
+    "i2c-bus": "^4.0.7"
+  }
+}
