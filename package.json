@@ -10,7 +10,11 @@
     "type": "git",
     "url": "https://github.com/mejsel/sensor-htu21d.git"
   },
-  "keywords": ["htu21", "htu21d", "temperature sensor"],
+  "keywords": [
+    "htu21",
+    "htu21d",
+    "temperature sensor"
+  ],
   "author": "Marcel Indlekofer",
   "license": "ISC",
   "dependencies": {
