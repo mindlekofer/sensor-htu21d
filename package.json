@@ -6,6 +6,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mejsel/sensor-htu21d.git"
+  },
+  "keywords": ["htu21", "htu21d", "temperature sensor"],
   "author": "Marcel Indlekofer",
   "license": "ISC",
   "dependencies": {
