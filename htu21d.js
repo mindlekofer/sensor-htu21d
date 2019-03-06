@@ -34,7 +34,6 @@ let bufferToHumidity = (buf) => {
 let sendByte = (i2cDev, byte) => {
     return new Promise( (resolve) => {
         i2cDev.sendByte(0x40, byte, (err) => {
-          //console.log(err);
           resolve();
         });
     });
@@ -49,7 +48,6 @@ let readBuffer = (i2cDev, buffer) => {
 };
 
 var Htu21d = function(i2cNr, period) {
-    //console.log('htu21d constructor');
     util.inherits(Htu21d, events.EventEmitter);
 
     this.i2cNr = i2cNr;
@@ -60,47 +58,41 @@ var Htu21d = function(i2cNr, period) {
         temperature: null,
         humidity: null
     };
-
-    this.reset = () => {
-        const i2c1 = i2c.openSync(this.i2cNr);
-        i2c1.sendByteSync(0x40, HTU21_CMD_SOFT_RESET);
-        i2c1.closeSync();
-    };
-
-    this.readout = async () => {
-        let buf = Buffer.alloc(3);
-        const i2c1 = i2c.openSync(this.i2cNr);
-
-        //i2c1.sendByteSync(0x40, HTU21_CMD_TRIGGER_TEMP_MEAS_NO_HOLD);
-        await sendByte(i2c1, HTU21_CMD_TRIGGER_TEMP_MEAS_NO_HOLD);
-        await delay(100);
-        //i2c1.i2cReadSync(0x40, 3, buf);
-        await readBuffer(i2c1, buf);
-        let temperature = bufferToTemperature(buf);
-
-        //i2c1.sendByteSync(0x40, HTU21_CMD_TRIGGER_HUM_MEAS_NO_HOLD);
-        await sendByte(i2c1, HTU21_CMD_TRIGGER_HUM_MEAS_NO_HOLD);
-        await delay(100);
-        //i2c1.i2cReadSync(0x40, 3, buf);
-        await readBuffer(i2c1, buf);
-        let humidity = bufferToHumidity(buf);
-
-        this.data.time = Date.now();
-        this.data.temperature = temperature;
-        this.data.humidity = humidity;
-
-        this.emit('fertig', this.data);
-
-        i2c1.closeSync();
-    };
+    this.i2cBus = null;
 
     this.start = () => {
+        this.i2cBus = i2c.open(this.i2cNr, (err) => {
+            console.log(err);
+            this.emit('error', err);
+        });
         this.timer = setInterval(this.readout, this.period);
     };
 
     this.stop = () => {
         clearInterval(this.timer);
+        this.i2cBus.closeSync();
     };
+
+    this.readout = async () => {
+        try {
+            let buf = Buffer.alloc(3);
+            await sendByte(this.i2cBus, HTU21_CMD_TRIGGER_TEMP_MEAS_NO_HOLD);
+            await delay(40);
+            await readBuffer(this.i2cBus, buf);
+            let temperature = bufferToTemperature(buf);
+            await sendByte(this.i2cBus, HTU21_CMD_TRIGGER_HUM_MEAS_NO_HOLD);
+            await delay(60);
+            await readBuffer(this.i2cBus, buf);
+            let humidity = bufferToHumidity(buf);
+            this.data.temperature = temperature;
+            this.data.humidity = humidity;
+            this.emit('readout-complete', this.data);
+        } catch (error) {
+            this.emit('error', error);
+            console.log(errror);
+        }
+    };
+
 }
 
 module.exports = Htu21d;

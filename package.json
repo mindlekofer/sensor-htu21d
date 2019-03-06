@@ -1,6 +1,6 @@
 {
   "name": "sensor-htu21d",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
   "main": "htu21d.js",
   "scripts": {
