@@ -56,7 +56,6 @@ var crc8 = (buffer) => {
       reg ^= poly;
       reg <<= 1;
   }
-  console.log(reg);
 }
 
 let verifyBuffer = (buffer) => {
@@ -107,7 +106,6 @@ var Htu21d = function(i2cNr, period) {
             await delay(100);
             await readBuffer(this.i2cBus, buf);
 
-            console.log(buf); 
             (err) = verifyTemperture(buf);
             (err) = verifyBuffer(buf);
             if (err) {
@@ -121,7 +119,6 @@ var Htu21d = function(i2cNr, period) {
             await readBuffer(this.i2cBus, buf);
             let humidity = bufferToHumidity(buf);
 
-            console.log(buf);
             (err) = verifyTemperture(buf);
             (err) = verifyBuffer(buf);
             if (err) {
@@ -130,7 +127,6 @@ var Htu21d = function(i2cNr, period) {
             }
 
             if (buf[1] & 0b11 != 0b10) {
-              console.log("this is not humidity data");
               this.emit('error', 'invalid humidity data');
             }
 
