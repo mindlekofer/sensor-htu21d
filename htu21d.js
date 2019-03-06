@@ -77,11 +77,11 @@ var Htu21d = function(i2cNr, period) {
         try {
             let buf = Buffer.alloc(3);
             await sendByte(this.i2cBus, HTU21_CMD_TRIGGER_TEMP_MEAS_NO_HOLD);
-            await delay(40);
+            await delay(100);
             await readBuffer(this.i2cBus, buf);
             let temperature = bufferToTemperature(buf);
             await sendByte(this.i2cBus, HTU21_CMD_TRIGGER_HUM_MEAS_NO_HOLD);
-            await delay(60);
+            await delay(100);
             await readBuffer(this.i2cBus, buf);
             let humidity = bufferToHumidity(buf);
             this.data.temperature = temperature;
