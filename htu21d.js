@@ -47,6 +47,41 @@ let readBuffer = (i2cDev, buffer) => {
     });
 };
 
+var crc8 = (buffer) => {
+  var poly = 0x98800000;
+  var reg = (buffer[0]<<24 | buffer[1]<<16 | buffer[2]<<8);
+  var shift = 0;
+  for (shift=0; shift<24; shift++) {
+    if (reg & 0x80000000)
+      reg ^= poly;
+      reg <<= 1;
+  }
+  console.log(reg);
+}
+
+let verifyBuffer = (buffer) => {
+  if (buffer[0] == 0 && buffer[1] == 0) {
+    return "open circuit condition";
+  } else if (buffer[0] == 0xff && buffer[1] == 0xff) {
+    return "short circuit condition";
+  } else if (crc8(buffer)) {
+    return "crc error";
+  }
+};
+
+let verifyTemperture = (buffer) => {
+  if (buffer[1] & 0b11 != 0b00) {
+    return "invalid temperature data";
+  } 
+};
+
+let verifyHumidity = (buffer) => {
+  if (buffer[1] & 0b11 != 0b10) {
+    return "invalid humidity data";
+  } 
+};
+
+
 var Htu21d = function(i2cNr, period) {
     util.inherits(Htu21d, events.EventEmitter);
 
@@ -54,17 +89,61 @@ var Htu21d = function(i2cNr, period) {
     this.period = period;
     this.timer = null;
     this.data = {
-        time: null,
         temperature: null,
         humidity: null
     };
-    this.i2cBus = null;
+
+    this.i2cBus = i2c.open(this.i2cNr, (err) => {
+        if (err) {
+          console.log("Error opening I2C bus ", err);
+          this.emit('error', err);
+        }
+    });
+
+    this.readout = async () => {
+        try {
+            let buf = Buffer.alloc(3);
+            await sendByte(this.i2cBus, HTU21_CMD_TRIGGER_TEMP_MEAS_NO_HOLD);
+            await delay(100);
+            await readBuffer(this.i2cBus, buf);
+
+            console.log(buf); 
+            (err) = verifyTemperture(buf);
+            (err) = verifyBuffer(buf);
+            if (err) {
+              this.emit('error', "error reading temperature");
+              return;
+            }
+
+            let temperature = bufferToTemperature(buf);
+            await sendByte(this.i2cBus, HTU21_CMD_TRIGGER_HUM_MEAS_NO_HOLD);
+            await delay(100);
+            await readBuffer(this.i2cBus, buf);
+            let humidity = bufferToHumidity(buf);
+
+            console.log(buf);
+            (err) = verifyTemperture(buf);
+            (err) = verifyBuffer(buf);
+            if (err) {
+              this.emit('error', "error reading humidity");
+              return;
+            }
+
+            if (buf[1] & 0b11 != 0b10) {
+              console.log("this is not humidity data");
+              this.emit('error', 'invalid humidity data');
+            }
+
+            this.data.temperature = Number(temperature);
+            this.data.humidity = Number(humidity);
+            this.emit('readout-complete', this.data);
+        } catch (error) {
+            this.emit('error', error);
+            console.log(error);
+        }
+    };
 
     this.start = () => {
-        this.i2cBus = i2c.open(this.i2cNr, (err) => {
-            console.log(err);
-            this.emit('error', err);
-        });
         this.timer = setInterval(this.readout, this.period);
     };
 
@@ -73,25 +152,6 @@ var Htu21d = function(i2cNr, period) {
         this.i2cBus.closeSync();
     };
 
-    this.readout = async () => {
-        try {
-            let buf = Buffer.alloc(3);
-            await sendByte(this.i2cBus, HTU21_CMD_TRIGGER_TEMP_MEAS_NO_HOLD);
-            await delay(100);
-            await readBuffer(this.i2cBus, buf);
-            let temperature = bufferToTemperature(buf);
-            await sendByte(this.i2cBus, HTU21_CMD_TRIGGER_HUM_MEAS_NO_HOLD);
-            await delay(100);
-            await readBuffer(this.i2cBus, buf);
-            let humidity = bufferToHumidity(buf);
-            this.data.temperature = temperature;
-            this.data.humidity = humidity;
-            this.emit('readout-complete', this.data);
-        } catch (error) {
-            this.emit('error', error);
-            console.log(errror);
-        }
-    };
 
 }
 

@@ -8,7 +8,7 @@ let htu = new Htu21d(1, 1000);
 htu.start();
 
 htu.on('readout-complete', (data) => {
-  console.log(data);    // e.g. { temperature: "26.39", humidity: "16.45" }
+  console.log(data);    // e.g. { temperature: 26.39, humidity: 16.45 }
 });
 
 htu.on('error', (error) => {
